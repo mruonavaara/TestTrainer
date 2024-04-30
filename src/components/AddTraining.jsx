@@ -9,7 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 function AddTraining(props) {
     const [open, setOpen] = useState(false);
     const [training, setTraining] = useState({
-        name: '',
+        customer: '',
         date: '',
         duration: '',
         activity: ''

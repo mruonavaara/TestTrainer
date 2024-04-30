@@ -2,55 +2,33 @@ import { useEffect, useState, useRef } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { Button } from '@mui/material';
 import Snackbar from '@mui/material/Snackbar';
-import { format } from 'date-fns'; 
+import { format } from 'date-fns';
 
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-material.css";
 import AddTraining from "./AddTraining";
 import EditTraining from "./EditTraining";
 
-
 function TrainingList() {
     const [trainings, setTrainings] = useState([]);
     const [SnackbarOpen, setSnackbarOpen] = useState(false);
-    const [customers, setCustomers] = useState([]);
     const gridRef = useRef();
 
     useEffect(() => {
         fetchData();
-        fetchCustomers();
     }, []);
 
     const fetchData = () => {
-        fetch('https://customerrestservice-personaltraining.rahtiapp.fi/api/trainings')
+        fetch('https://customerrestservice-personaltraining.rahtiapp.fi/gettrainings')
             .then(response => response.json())
             .then(data => {
-                const updatedTrainings = data._embedded.trainings.map(async training => {
-                    if (training._links.customer && training._links.customer.href) {
-                        const customerResponse = await fetch(training._links.customer.href);
-                        if (customerResponse.ok) {
-                            const customerData = await customerResponse.json();
-                            training.customerName = `${customerData.firstname} ${customerData.lastname}`;
-                        } else {
-                            training.customerName = 'No Customer Data'; 
-                        }
-                    }
-                    return training;
-                });
-                Promise.all(updatedTrainings)
-                    .then(updatedTrainings => {
-                        setTrainings(updatedTrainings);
-                    })
-                    .catch(error => console.error('Error updating trainings: ', error));
+                const updatedTrainings = data.map(training => ({
+                    ...training,
+                    customerName: training.customer ? `${training.customer.firstname} ${training.customer.lastname}` : 'Unknown Customer'
+                }));
+                setTrainings(updatedTrainings);
             })
             .catch(error => console.error('Error fetching data: ', error));
-    }
-
-    const fetchCustomers = () => {
-        fetch('https://customerrestservice-personaltraining.rahtiapp.fi/api/customers')
-            .then(response => response.json())
-            .then(data => setCustomers(data._embedded.customers))
-            .catch(error => console.error('Error fetching customers: ', error));
     }
 
     const renderEditTraining = (params) => {
@@ -60,11 +38,30 @@ function TrainingList() {
     }
 
     const renderDeleteButton = (params) => {
+        if (!params.data) {
+            return null; 
+        }
+    
         return (
             <Button size='small' color='error' onClick={() => deleteTraining(params.data)}>Delete</Button>
         );
     }
 
+    const deleteTraining = (training) => {
+        if (window.confirm('Are you sure?')) {
+            fetch('https://customerrestservice-personaltraining.rahtiapp.fi/api/trainings/' + training.id, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        setSnackbarOpen(true); 
+                        fetchData();
+                    } else {
+                        throw new Error('Failed to delete training');
+                    }
+                })
+                .catch(error => console.error(error))
+        }
+    }
+    
     const saveTraining = (training) => {
         fetch('https://customerrestservice-personaltraining.rahtiapp.fi/api/trainings', {
             method: 'POST',
@@ -73,10 +70,16 @@ function TrainingList() {
             },
             body: JSON.stringify(training)
         })
-            .then(response => fetchData())
+            .then(response => {
+                if (response.ok) {
+                    fetchData();
+                } else {
+                    throw new Error('Failed to save training');
+                }
+            })
             .catch(error => console.error(error))
     }
-
+    
     const updateTraining = (training, link) => {
         fetch(link, {
             method: 'PUT',
@@ -85,7 +88,13 @@ function TrainingList() {
             },
             body: JSON.stringify(training)
         })
-            .then(response => fetchData())
+            .then(response => {
+                if (response.ok) {
+                    fetchData(); 
+                } else {
+                    throw new Error('Failed to update training');
+                }
+            })
             .catch(error => console.error(error))
     }
 
@@ -100,7 +109,7 @@ function TrainingList() {
             field: 'date', 
             filter: true, 
             sortable: true, 
-            valueFormatter: (params) => format(new Date(params.value), 'dd.MM.yyyy HH:mm') 
+            valueFormatter: (params) => params.value ? format(new Date(params.value), 'dd.MM.yyyy HH:mm') : ''
         },
         { field: 'duration', filter: true, sortable: true }, 
         { field: 'activity', filter: true, sortable: true }, 
@@ -113,7 +122,7 @@ function TrainingList() {
             sortable: false,
             width: 90,
             headerName: '',
-            field: '_links.self.href',
+            field: 'id',
             cellRenderer: renderDeleteButton
         }
     ];

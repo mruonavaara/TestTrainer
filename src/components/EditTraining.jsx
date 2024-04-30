@@ -9,9 +9,9 @@ import DialogTitle from '@mui/material/DialogTitle';
 function EditTraining(props) {
     const [open, setOpen] = useState(false);
     const [training, setTraining] = useState({
-        customer: '', 
-        date: '',  
-        duration: '', 
+        customer: '',
+        date: '',
+        duration: '',
         activity: ''
     });
 
@@ -55,7 +55,7 @@ function EditTraining(props) {
             >
                 <DialogTitle>Edit training</DialogTitle>
                 <DialogContent>
-                <TextField
+                    <TextField
                         autoFocus
                         margin="dense"
                         name="customer"
