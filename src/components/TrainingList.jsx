@@ -7,7 +7,6 @@ import { format } from 'date-fns';
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-material.css";
 import AddTraining from "./AddTraining";
-import EditTraining from "./EditTraining";
 
 function TrainingList() {
     const [trainings, setTrainings] = useState([]);
@@ -29,12 +28,6 @@ function TrainingList() {
                 setTrainings(updatedTrainings);
             })
             .catch(error => console.error('Error fetching data: ', error));
-    }
-
-    const renderEditTraining = (params) => {
-        return (
-            <EditTraining updateTraining={updateTraining} training={params.data} />
-        );
     }
 
     const renderDeleteButton = (params) => {
@@ -79,24 +72,6 @@ function TrainingList() {
             })
             .catch(error => console.error(error))
     }
-    
-    const updateTraining = (training, link) => {
-        fetch(link, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(training)
-        })
-            .then(response => {
-                if (response.ok) {
-                    fetchData(); 
-                } else {
-                    throw new Error('Failed to update training');
-                }
-            })
-            .catch(error => console.error(error))
-    }
 
     const columnDefs = [
         { 
@@ -113,11 +88,6 @@ function TrainingList() {
         },
         { field: 'duration', filter: true, sortable: true }, 
         { field: 'activity', filter: true, sortable: true }, 
-        {
-            sortable: false,
-            width: 90,
-            cellRenderer: renderEditTraining
-        },
         {
             sortable: false,
             width: 90,
